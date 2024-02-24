@@ -1,0 +1,1915 @@
+Resources:
+  UserPool6BA7E5F2:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage: The verification code to your new account is {####}
+      EmailVerificationSubject: Verify your new account
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireUppercase: true
+      Schema:
+        - Mutable: true
+          Name: email
+          Required: true
+        - Mutable: true
+          Name: name
+          Required: true
+        - Mutable: true
+          Name: picture
+          Required: false
+      SmsVerificationMessage: The verification code to your new account is {####}
+      UserPoolName: blog-user-pool
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: The verification code to your new account is {####}
+        EmailSubject: Verify your new account
+        SmsMessage: The verification code to your new account is {####}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/UserPool/Resource
+  blogposts850DFBDC:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-posts/Resource
+  blogthemes64F01400:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-themes/Resource
+  blogpythonlayer713933F4:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.8
+      Content:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 9a17d3536661433805c0a46951d8be05e16e45174d34737a02fdcb6a6105c43e.zip
+      Description: Python layer for blog application
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog_python_layer/Resource
+      aws:asset:path: asset.9a17d3536661433805c0a46951d8be05e16e45174d34737a02fdcb6a6105c43e
+      aws:asset:is-bundled: true
+      aws:asset:property: Content
+  UserManagerFunctionServiceRole64A5DEE6:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/UserManagerFunction/ServiceRole/Resource
+  UserManagerFunctionServiceRoleDefaultPolicy1D155AC6:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - cognito-idp:AdminCreateUser
+              - cognito-idp:AdminDeleteUser
+              - cognito-idp:AdminGetUser
+              - cognito-idp:AdminUpdateUserAttributes
+              - cognito-idp:ListUsers
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - UserPool6BA7E5F2
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: UserManagerFunctionServiceRoleDefaultPolicy1D155AC6
+      Roles:
+        - Ref: UserManagerFunctionServiceRole64A5DEE6
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/UserManagerFunction/ServiceRole/DefaultPolicy/Resource
+  UserManagerFunctionE9D6202A:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: 4ca61fd3bb3d0299a20892b9a1bc7d87cd7e6f08ae039b14b1296b385a6dd78a.zip
+      Environment:
+        Variables:
+          USERPOOLID:
+            Ref: UserPool6BA7E5F2
+      Handler: user_management_lambda.handler
+      Layers:
+        - Ref: blogpythonlayer713933F4
+      Role:
+        Fn::GetAtt:
+          - UserManagerFunctionServiceRole64A5DEE6
+          - Arn
+      Runtime: python3.8
+    DependsOn:
+      - UserManagerFunctionServiceRoleDefaultPolicy1D155AC6
+      - UserManagerFunctionServiceRole64A5DEE6
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/UserManagerFunction/Resource
+      aws:asset:path: asset.4ca61fd3bb3d0299a20892b9a1bc7d87cd7e6f08ae039b14b1296b385a6dd78a
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  UserManagerFunctionUserManagementLambdaInvoke0E117714:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /*/*/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/UserManagerFunction/UserManagementLambdaInvoke
+  ThemesLambdaFunctionServiceRole24A1603B:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/ThemesLambdaFunction/ServiceRole/Resource
+  ThemesLambdaFunctionServiceRoleDefaultPolicy14FB6C2B:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - blogthemes64F01400
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: ThemesLambdaFunctionServiceRoleDefaultPolicy14FB6C2B
+      Roles:
+        - Ref: ThemesLambdaFunctionServiceRole24A1603B
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/ThemesLambdaFunction/ServiceRole/DefaultPolicy/Resource
+  ThemesLambdaFunction9B88A75B:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: f4aedeef553c5b47183a340f747388030a051a7f83ad31ef9fb70c57257075f7.zip
+      Environment:
+        Variables:
+          THEMES_TABLE_NAME:
+            Ref: blogthemes64F01400
+      Handler: themes_lambda_function.handler
+      Layers:
+        - Ref: blogpythonlayer713933F4
+      Role:
+        Fn::GetAtt:
+          - ThemesLambdaFunctionServiceRole24A1603B
+          - Arn
+      Runtime: python3.8
+    DependsOn:
+      - ThemesLambdaFunctionServiceRoleDefaultPolicy14FB6C2B
+      - ThemesLambdaFunctionServiceRole24A1603B
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/ThemesLambdaFunction/Resource
+      aws:asset:path: asset.f4aedeef553c5b47183a340f747388030a051a7f83ad31ef9fb70c57257075f7
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  ThemesLambdaFunctionThemesLambdaInvokeB2FEF2BA:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /*/*/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/ThemesLambdaFunction/ThemesLambdaInvoke
+  PostsLambdaFunctionServiceRoleF63DB2E7:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/PostsLambdaFunction/ServiceRole/Resource
+  PostsLambdaFunctionServiceRoleDefaultPolicyEF5BB0AA:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:BatchWriteItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DeleteItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:PutItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - blogposts850DFBDC
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: PostsLambdaFunctionServiceRoleDefaultPolicyEF5BB0AA
+      Roles:
+        - Ref: PostsLambdaFunctionServiceRoleF63DB2E7
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/PostsLambdaFunction/ServiceRole/DefaultPolicy/Resource
+  PostsLambdaFunction9A19C9F2:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: c1242abc0dc3a77ec7e2c522f71b539ea53626571809bf0a68dfa0f78ec99fba.zip
+      Environment:
+        Variables:
+          POSTS_TABLE_NAME:
+            Ref: blogposts850DFBDC
+      Handler: posts_lambda_function.handler
+      Layers:
+        - Ref: blogpythonlayer713933F4
+      Role:
+        Fn::GetAtt:
+          - PostsLambdaFunctionServiceRoleF63DB2E7
+          - Arn
+      Runtime: python3.8
+    DependsOn:
+      - PostsLambdaFunctionServiceRoleDefaultPolicyEF5BB0AA
+      - PostsLambdaFunctionServiceRoleF63DB2E7
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/PostsLambdaFunction/Resource
+      aws:asset:path: asset.c1242abc0dc3a77ec7e2c522f71b539ea53626571809bf0a68dfa0f78ec99fba
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  PostsLambdaFunctionPostsLambdaInvokeACE6819F:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /*/*/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/PostsLambdaFunction/PostsLambdaInvoke
+  blogapiC47A2BFC:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: blog-api
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Resource
+  blogapiDeploymentC082580B185467df0f53f423941722db018eb41e:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: Automatically created by the RestApi construct
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    DependsOn:
+      - blogapiOPTIONS9005D91C
+      - blogapipostsidDELETE5FFBEEF9
+      - blogapipostsidGETEBA8720A
+      - blogapipostsidOPTIONS7F97A97E
+      - blogapipostsidPUT579BBD26
+      - blogapipostsidFDC1A770
+      - blogapipostsGET1BA176A0
+      - blogapipostsOPTIONS65B20BE8
+      - blogapipostsPOST26CB7FAA
+      - blogapiposts87A5EC41
+      - blogapithemesidDELETEC36A8E03
+      - blogapithemesidGET8636DC73
+      - blogapithemesidOPTIONS8563AAF2
+      - blogapithemesidPUT962ACECF
+      - blogapithemesid25310813
+      - blogapithemesGET54E394C9
+      - blogapithemesOPTIONSE53B3531
+      - blogapithemesPOSTDA0320F0
+      - blogapithemes8B93348D
+      - blogapiusersidDELETE3E4975D3
+      - blogapiusersidGETF713B53A
+      - blogapiusersidOPTIONSD3A9D567
+      - blogapiusersidPUT582C288C
+      - blogapiusersid3993B19F
+      - blogapiusersGET8DA5C6B5
+      - blogapiusersOPTIONSD154D737
+      - blogapiusersPOSTF2FB58F4
+      - blogapiusersE431407E
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Deployment/Resource
+  blogapiDeploymentStageprod8F6E69B3:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId:
+        Ref: blogapiDeploymentC082580B185467df0f53f423941722db018eb41e
+      RestApiId:
+        Ref: blogapiC47A2BFC
+      StageName: prod
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/DeploymentStage.prod/Resource
+  blogapiOPTIONS9005D91C:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Fn::GetAtt:
+          - blogapiC47A2BFC
+          - RootResourceId
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/OPTIONS/Resource
+  blogapiusersE431407E:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - blogapiC47A2BFC
+          - RootResourceId
+      PathPart: users
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/Resource
+  blogapiusersOPTIONSD154D737:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: blogapiusersE431407E
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/OPTIONS/Resource
+  blogapiusersGETApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885GETusersC9A3F3A6:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /GET/users
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/GET/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.GET..users
+  blogapiusersGETApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885GETusers11B31273:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/GET/users
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/GET/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.GET..users
+  blogapiusersGET8DA5C6B5:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UserManagerFunctionE9D6202A
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapiusersE431407E
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/GET/Resource
+  blogapiusersPOSTApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885POSTusers67E05121:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /POST/users
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/POST/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.POST..users
+  blogapiusersPOSTApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885POSTusers727F48BA:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/POST/users
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/POST/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.POST..users
+  blogapiusersPOSTF2FB58F4:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UserManagerFunctionE9D6202A
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapiusersE431407E
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/POST/Resource
+  blogapiusersid3993B19F:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: blogapiusersE431407E
+      PathPart: "{id}"
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/Resource
+  blogapiusersidOPTIONSD3A9D567:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: blogapiusersid3993B19F
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/OPTIONS/Resource
+  blogapiusersidGETApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885GETusersid8A0A0FB8:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /GET/users/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/GET/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.GET..users.{id}
+  blogapiusersidGETApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885GETusersidD1A59B82:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/GET/users/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/GET/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.GET..users.{id}
+  blogapiusersidGETF713B53A:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UserManagerFunctionE9D6202A
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapiusersid3993B19F
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/GET/Resource
+  blogapiusersidPUTApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885PUTusersid5A77431D:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /PUT/users/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/PUT/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.PUT..users.{id}
+  blogapiusersidPUTApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885PUTusersidB70CD598:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/PUT/users/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/PUT/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.PUT..users.{id}
+  blogapiusersidPUT582C288C:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: PUT
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UserManagerFunctionE9D6202A
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapiusersid3993B19F
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/PUT/Resource
+  blogapiusersidDELETEApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885DELETEusersid9D559713:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /DELETE/users/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/DELETE/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.DELETE..users.{id}
+  blogapiusersidDELETEApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885DELETEusersid1E321934:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - UserManagerFunctionE9D6202A
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/DELETE/users/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/DELETE/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.DELETE..users.{id}
+  blogapiusersidDELETE3E4975D3:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - UserManagerFunctionE9D6202A
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapiusersid3993B19F
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/users/{id}/DELETE/Resource
+  blogapithemes8B93348D:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - blogapiC47A2BFC
+          - RootResourceId
+      PathPart: themes
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/Resource
+  blogapithemesOPTIONSE53B3531:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: blogapithemes8B93348D
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/OPTIONS/Resource
+  blogapithemesGETApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885GETthemes717E86AD:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /GET/themes
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/GET/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.GET..themes
+  blogapithemesGETApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885GETthemes491A7D50:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/GET/themes
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/GET/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.GET..themes
+  blogapithemesGET54E394C9:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ThemesLambdaFunction9B88A75B
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapithemes8B93348D
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/GET/Resource
+  blogapithemesPOSTApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885POSTthemes99194BF6:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /POST/themes
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/POST/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.POST..themes
+  blogapithemesPOSTApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885POSTthemesA955CA17:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/POST/themes
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/POST/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.POST..themes
+  blogapithemesPOSTDA0320F0:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ThemesLambdaFunction9B88A75B
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapithemes8B93348D
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/POST/Resource
+  blogapithemesid25310813:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: blogapithemes8B93348D
+      PathPart: "{id}"
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/Resource
+  blogapithemesidOPTIONS8563AAF2:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: blogapithemesid25310813
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/OPTIONS/Resource
+  blogapithemesidGETApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885GETthemesid252E0299:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /GET/themes/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/GET/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.GET..themes.{id}
+  blogapithemesidGETApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885GETthemesid6EAC870B:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/GET/themes/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/GET/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.GET..themes.{id}
+  blogapithemesidGET8636DC73:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ThemesLambdaFunction9B88A75B
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapithemesid25310813
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/GET/Resource
+  blogapithemesidPUTApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885PUTthemesid55A8E5B4:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /PUT/themes/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/PUT/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.PUT..themes.{id}
+  blogapithemesidPUTApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885PUTthemesid54A07902:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/PUT/themes/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/PUT/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.PUT..themes.{id}
+  blogapithemesidPUT962ACECF:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: PUT
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ThemesLambdaFunction9B88A75B
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapithemesid25310813
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/PUT/Resource
+  blogapithemesidDELETEApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885DELETEthemesidDB36889A:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /DELETE/themes/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/DELETE/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.DELETE..themes.{id}
+  blogapithemesidDELETEApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885DELETEthemesidB7144C04:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ThemesLambdaFunction9B88A75B
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/DELETE/themes/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/DELETE/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.DELETE..themes.{id}
+  blogapithemesidDELETEC36A8E03:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - ThemesLambdaFunction9B88A75B
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapithemesid25310813
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/themes/{id}/DELETE/Resource
+  blogapiposts87A5EC41:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - blogapiC47A2BFC
+          - RootResourceId
+      PathPart: posts
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/Resource
+  blogapipostsOPTIONS65B20BE8:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: blogapiposts87A5EC41
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/OPTIONS/Resource
+  blogapipostsGETApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885GETposts4E3AC50B:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /GET/posts
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/GET/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.GET..posts
+  blogapipostsGETApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885GETpostsEA0049A8:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/GET/posts
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/GET/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.GET..posts
+  blogapipostsGET1BA176A0:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - PostsLambdaFunction9A19C9F2
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapiposts87A5EC41
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/GET/Resource
+  blogapipostsPOSTApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885POSTpostsDD2BDD92:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /POST/posts
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/POST/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.POST..posts
+  blogapipostsPOSTApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885POSTpostsD3A8B888:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/POST/posts
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/POST/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.POST..posts
+  blogapipostsPOST26CB7FAA:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - PostsLambdaFunction9A19C9F2
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapiposts87A5EC41
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/POST/Resource
+  blogapipostsidFDC1A770:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: blogapiposts87A5EC41
+      PathPart: "{id}"
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/Resource
+  blogapipostsidOPTIONS7F97A97E:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+            StatusCode: "204"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "204"
+      ResourceId:
+        Ref: blogapipostsidFDC1A770
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/OPTIONS/Resource
+  blogapipostsidGETApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885GETpostsid8C4D0235:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /GET/posts/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/GET/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.GET..posts.{id}
+  blogapipostsidGETApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885GETpostsid4DE2ECFB:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/GET/posts/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/GET/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.GET..posts.{id}
+  blogapipostsidGETEBA8720A:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - PostsLambdaFunction9A19C9F2
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapipostsidFDC1A770
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/GET/Resource
+  blogapipostsidPUTApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885PUTpostsidFD0BD101:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /PUT/posts/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/PUT/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.PUT..posts.{id}
+  blogapipostsidPUTApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885PUTpostsid4995418A:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/PUT/posts/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/PUT/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.PUT..posts.{id}
+  blogapipostsidPUT579BBD26:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: PUT
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - PostsLambdaFunction9A19C9F2
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapipostsidFDC1A770
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/PUT/Resource
+  blogapipostsidDELETEApiPermissionAwsCdkBlogServerlessStackblogapiE34BD885DELETEpostsidD4CC92D8:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /
+            - Ref: blogapiDeploymentStageprod8F6E69B3
+            - /DELETE/posts/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/DELETE/ApiPermission.AwsCdkBlogServerlessStackblogapiE34BD885.DELETE..posts.{id}
+  blogapipostsidDELETEApiPermissionTestAwsCdkBlogServerlessStackblogapiE34BD885DELETEpostsid44B54BBF:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - PostsLambdaFunction9A19C9F2
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: blogapiC47A2BFC
+            - /test-invoke-stage/DELETE/posts/*
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/DELETE/ApiPermission.Test.AwsCdkBlogServerlessStackblogapiE34BD885.DELETE..posts.{id}
+  blogapipostsidDELETE5FFBEEF9:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - PostsLambdaFunction9A19C9F2
+                  - Arn
+              - /invocations
+      ResourceId:
+        Ref: blogapipostsidFDC1A770
+      RestApiId:
+        Ref: blogapiC47A2BFC
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/blog-api/Default/posts/{id}/DELETE/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/1WRTW/DIAyGf0vuhKbtZce1nXbatKj7uFYu8VKvBKLgqIpQ/vuAJFp38uPXLwabjVxvC+mLDG4uV9U113SW/p1BXUWQTl7Z2hBb6T8ddqW1Why+zcKjqAYDja3CmQ84a4zFBKNw2xM4h+zkLoaQy32vrsh7cCg0NOcKpA/+Fxiw+8LOkTXx/HNvFM9cYteQi5VREDTSH+10SYql1aSG5Es0CmipBsYbDMGKjnctJfeMT9hqOzRoOKp3WRi4Tn0nCH7bdwrTU1+RL7aKxZmW6tw58Tj+yWne2IhMHT1vPbc937sjH6ypiNNkRQ66vYAsssf5G1YxTjvK2yHcamaLL1P2b2eTtKwtvGQSVlv5INeb7McR5V1vmBqUxyn+AmgJe0n3AQAA
+    Metadata:
+      aws:cdk:path: AwsCdkBlogServerlessStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Outputs:
+  blogapiEndpoint00C5FF82:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: blogapiC47A2BFC
+          - .execute-api.
+          - Ref: AWS::Region
+          - "."
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: blogapiDeploymentStageprod8F6E69B3
+          - /
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - il-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+Rules:
+  CheckBootstrapVersion:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Contains:
+                - - "1"
+                  - "2"
+                  - "3"
+                  - "4"
+                  - "5"
+                - Ref: BootstrapVersion
+        AssertDescription: CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.
+

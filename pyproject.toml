@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "aws-cdk-blog-serverless"
+version = "0.1.0"
+description = ""
+authors = ["Ícaro Abreu <oicaroabreu@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8.12"
+constructs = "^10.3.0"
+aws-cdk-lib = "^2.130.0"
+boto3 = "^1.34.49"
+ulid = "^1.1"
+aws-cdk-aws-lambda-python-alpha = "^2.130.0a0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
