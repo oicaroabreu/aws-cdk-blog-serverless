@@ -43,18 +43,23 @@ def list_users(user_pool_id):
 def transform_users_data(users_data):
     transformed_data = []
     for user in users_data:
-        transformed_user = {"id": user["Username"]}
-        for attribute in user["Attributes"]:
-            if attribute["Name"] == "name":
-                transformed_user["name"] = attribute["Value"]
-            elif attribute["Name"] == "email":
-                transformed_user["email"] = attribute["Value"]
-            elif attribute["Name"].startswith("custom:"):
-                transformed_user[attribute["Name"].replace("custom:", "")] = attribute[
-                    "Value"
-                ]
+        transformed_user = transform_single_user(user, "Attributes")
         transformed_data.append(transformed_user)
     return transformed_data
+
+
+def transform_single_user(user_data, attr_field):
+    transformed_user = {"id": user_data["Username"]}
+    for attribute in user_data[attr_field]:
+        if attribute["Name"] == "name":
+            transformed_user["name"] = attribute["Value"]
+        elif attribute["Name"] == "email":
+            transformed_user["email"] = attribute["Value"]
+        elif attribute["Name"].startswith("custom:"):
+            transformed_user[attribute["Name"].replace("custom:profile_picture", "photo")] = attribute[
+                "Value"
+            ]
+    return transformed_user
 
 
 def delete_user(user_pool_id, username):
@@ -94,6 +99,13 @@ def handler(event, context):
     if "body" in event and event["body"] is not None:
         body = json.loads(event["body"])
 
+    headers = {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent",
+    }
+
     default_password = os.environ["DEFAULT_PASSWORD"]
 
     if http_method == "POST":
@@ -104,13 +116,13 @@ def handler(event, context):
                 fullname=body["name"],
                 email=body["email"],
                 password=default_password,
-                profile_picture=body["profile_picture"],
+                profile_picture=body["photo"],
             )
             print(response)
 
             return {
                 "statusCode": 200,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     {
                         "message": "User Saved Successfully",
@@ -120,7 +132,7 @@ def handler(event, context):
         else:
             return {
                 "statusCode": 400,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     {
                         "message": "Bad Request",
@@ -134,8 +146,10 @@ def handler(event, context):
             # if "Item" in response:
             return {
                 "statusCode": 200,
-                "headers": {"Content-Type": "application/json"},
-                "body": json.dumps(response),
+                "headers": headers,
+                "body": json.dumps(
+                    transform_single_user(response, "UserAttributes"), cls=CustomJSONEncoder
+                ),
             }
         else:
             response = list_users(user_pool_id)
@@ -143,7 +157,7 @@ def handler(event, context):
             # if "Items" in response:
             return {
                 "statusCode": 200,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     transform_users_data(response), cls=CustomJSONEncoder
                 ),
@@ -158,14 +172,14 @@ def handler(event, context):
                 username=user_id,
                 fullname=body["name"],
                 email=body["email"],
-                profile_picture=body["profile_picture"],
+                profile_picture=body["photo"],
             )
             print(response)
 
             # if "Attributes" in response:
             return {
                 "statusCode": 200,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     {"message": f"User {user_id} has been updated succesfully"}
                 ),
@@ -173,7 +187,7 @@ def handler(event, context):
         else:
             return {
                 "statusCode": 400,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     {
                         "message": "Bad Request",
@@ -189,7 +203,7 @@ def handler(event, context):
         #     if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
         return {
             "statusCode": 200,
-            "headers": {"Content-Type": "application/json"},
+            "headers": headers,
             "body": json.dumps(
                 {"message": f"User {user_id} has been deleted succesfully"}
             ),
@@ -197,6 +211,6 @@ def handler(event, context):
 
     return {
         "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
+        "headers": headers,
         "body": json.dumps({"message": "Success"}),
     }

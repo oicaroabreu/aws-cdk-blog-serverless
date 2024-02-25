@@ -22,6 +22,13 @@ def handler(event, context):
     if "body" in event and event["body"] is not None:
         body = json.loads(event["body"])
 
+    headers = {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent",
+    }
+
     if http_method == "POST":
 
         if body:
@@ -29,14 +36,14 @@ def handler(event, context):
             response = table.put_item(
                 Item={
                     "id": ulid(),
-                    "name": body["name"],
+                    "description": body["description"],
                 },
             )
             print(response)
 
             return {
                 "statusCode": 200,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     {
                         "message": "Theme Saved Successfully",
@@ -47,7 +54,7 @@ def handler(event, context):
         else:
             return {
                 "statusCode": 400,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     {
                         "message": "Bad Request",
@@ -61,7 +68,7 @@ def handler(event, context):
             if "Item" in response:
                 return {
                     "statusCode": 200,
-                    "headers": {"Content-Type": "application/json"},
+                    "headers": headers,
                     "body": json.dumps(response["Item"]),
                 }
         else:
@@ -69,7 +76,7 @@ def handler(event, context):
             if "Items" in response:
                 return {
                     "statusCode": 200,
-                    "headers": {"Content-Type": "application/json"},
+                    "headers": headers,
                     "body": json.dumps(response["Items"]),
                 }
 
@@ -78,10 +85,9 @@ def handler(event, context):
         if body:
             response = table.update_item(
                 Key={"id": theme_id},
-                UpdateExpression="set #n = :n",
-                ExpressionAttributeNames={"#n": "name"},
+                UpdateExpression="set description = :d",
                 ExpressionAttributeValues={
-                    ":n": body["name"],
+                    ":d": body["description"],
                 },
                 ReturnValues="ALL_NEW",
             )
@@ -90,7 +96,7 @@ def handler(event, context):
             if "Attributes" in response:
                 return {
                     "statusCode": 200,
-                    "headers": {"Content-Type": "application/json"},
+                    "headers": headers,
                     "body": json.dumps(
                         {
                             "message": "Theme Saved Successfully",
@@ -102,7 +108,7 @@ def handler(event, context):
         else:
             return {
                 "statusCode": 400,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     {
                         "message": "Bad Request",
@@ -117,12 +123,12 @@ def handler(event, context):
             if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                 return {
                     "statusCode": 200,
-                    "headers": {"Content-Type": "application/json"},
+                    "headers": headers,
                     "body": json.dumps({"message": "Success"}),
                 }
 
     return {
         "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
+        "headers": headers,
         "body": json.dumps({"message": "Success"}),
     }

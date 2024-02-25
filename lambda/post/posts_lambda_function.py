@@ -22,6 +22,13 @@ def handler(event, context):
     dynamodb = boto3.resource("dynamodb")
     table = dynamodb.Table(table_name)
 
+    headers = {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent",
+    }
+
     if http_method == "POST":
 
         if body:
@@ -29,7 +36,7 @@ def handler(event, context):
                 Item={
                     "id": ulid(),
                     "title": body["title"],
-                    "message": body["message"],
+                    "text": body["text"],
                     "datetime": body["datetime"],
                     "user_id": body["user_id"],
                     "theme_id": body["theme_id"],
@@ -38,15 +45,17 @@ def handler(event, context):
 
             return {
                 "statusCode": 200,
-                "headers": {"Content-Type": "application/json"},
-                "body": json.dumps({
-                    "message": "Post Saved Successfully",
-                }),
+                "headers": headers,
+                "body": json.dumps(
+                    {
+                        "message": "Post Saved Successfully",
+                    }
+                ),
             }
         else:
             return {
                 "statusCode": 400,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     {
                         "message": "Bad Request",
@@ -59,7 +68,7 @@ def handler(event, context):
             if "Item" in response:
                 return {
                     "statusCode": 200,
-                    "headers": {"Content-Type": "application/json"},
+                    "headers": headers,
                     "body": json.dumps(response["Item"]),
                 }
         else:
@@ -67,7 +76,7 @@ def handler(event, context):
             if "Items" in response:
                 return {
                     "statusCode": 200,
-                    "headers": {"Content-Type": "application/json"},
+                    "headers": headers,
                     "body": json.dumps(response["Items"]),
                 }
 
@@ -88,11 +97,11 @@ def handler(event, context):
         if body:
             response = table.update_item(
                 Key={"id": post_id},
-                UpdateExpression="set title = :t, message = :m, #dt = :dt, user_id = :uid, theme_id = :tid",
-                ExpressionAttributeNames={"#dt": "datetime"},
+                UpdateExpression="set title = :t, #text = :tx, #dt = :dt, user_id = :uid, theme_id = :tid",
+                ExpressionAttributeNames={"#dt": "datetime", "#text": "text"},
                 ExpressionAttributeValues={
                     ":t": body["title"],
-                    ":m": body["message"],
+                    ":tx": body["text"],
                     ":dt": body["datetime"],
                     ":uid": body["user_id"],
                     ":tid": body["theme_id"],
@@ -103,10 +112,10 @@ def handler(event, context):
             if "Attributes" in response:
                 return {
                     "statusCode": 200,
-                    "headers": {"Content-Type": "application/json"},
+                    "headers": headers,
                     "body": json.dumps(
                         {
-                            "message": "Post Updated Successfully",
+                            "message": "Post Saved Successfully",
                             "item": response["Attributes"],
                         }
                     ),
@@ -114,7 +123,7 @@ def handler(event, context):
         else:
             return {
                 "statusCode": 400,
-                "headers": {"Content-Type": "application/json"},
+                "headers": headers,
                 "body": json.dumps(
                     {
                         "message": "Bad Request",
@@ -129,12 +138,20 @@ def handler(event, context):
             if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
                 return {
                     "statusCode": 200,
-                    "headers": {"Content-Type": "application/json"},
-                    "body": json.dumps({"message": "Success"}),
+                    "headers": headers,
+                    "body": json.dumps(
+                        {
+                            "message": "Success",
+                        }
+                    ),
                 }
 
     return {
         "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"message": "Success"}),
+        "headers": headers,
+        "body": json.dumps(
+            {
+                "message": "Success",
+            }
+        ),
     }

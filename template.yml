@@ -25,9 +25,12 @@ Resources:
         - Mutable: true
           Name: name
           Required: true
-        - Mutable: true
-          Name: picture
-          Required: false
+        - AttributeDataType: String
+          Mutable: true
+          Name: profile_picture
+          StringAttributeConstraints:
+            MaxLength: "2048"
+            MinLength: "0"
       SmsVerificationMessage: The verification code to your new account is {####}
       UserPoolName: blog-user-pool
       VerificationMessageTemplate:
@@ -128,11 +131,12 @@ Resources:
       Code:
         S3Bucket:
           Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
-        S3Key: 4ca61fd3bb3d0299a20892b9a1bc7d87cd7e6f08ae039b14b1296b385a6dd78a.zip
+        S3Key: 40702a585e05e2543c6f8d75c1d6465743ef07cb319001da62b87cd045e4c18d.zip
       Environment:
         Variables:
           USERPOOLID:
             Ref: UserPool6BA7E5F2
+          DEFAULT_PASSWORD: g8CCfF249#io3qdw!
       Handler: user_management_lambda.handler
       Layers:
         - Ref: blogpythonlayer713933F4
@@ -146,7 +150,7 @@ Resources:
       - UserManagerFunctionServiceRole64A5DEE6
     Metadata:
       aws:cdk:path: AwsCdkBlogServerlessStack/UserManagerFunction/Resource
-      aws:asset:path: asset.4ca61fd3bb3d0299a20892b9a1bc7d87cd7e6f08ae039b14b1296b385a6dd78a
+      aws:asset:path: asset.40702a585e05e2543c6f8d75c1d6465743ef07cb319001da62b87cd045e4c18d
       aws:asset:is-bundled: true
       aws:asset:property: Code
   UserManagerFunctionUserManagementLambdaInvoke0E117714:
@@ -226,7 +230,7 @@ Resources:
       Code:
         S3Bucket:
           Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
-        S3Key: f4aedeef553c5b47183a340f747388030a051a7f83ad31ef9fb70c57257075f7.zip
+        S3Key: f940f694626e70ec63aceb1541836a4542dd46825af7ebef1ffb581b878bc7b9.zip
       Environment:
         Variables:
           THEMES_TABLE_NAME:
@@ -244,7 +248,7 @@ Resources:
       - ThemesLambdaFunctionServiceRole24A1603B
     Metadata:
       aws:cdk:path: AwsCdkBlogServerlessStack/ThemesLambdaFunction/Resource
-      aws:asset:path: asset.f4aedeef553c5b47183a340f747388030a051a7f83ad31ef9fb70c57257075f7
+      aws:asset:path: asset.f940f694626e70ec63aceb1541836a4542dd46825af7ebef1ffb581b878bc7b9
       aws:asset:is-bundled: true
       aws:asset:property: Code
   ThemesLambdaFunctionThemesLambdaInvokeB2FEF2BA:
@@ -324,7 +328,7 @@ Resources:
       Code:
         S3Bucket:
           Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
-        S3Key: c1242abc0dc3a77ec7e2c522f71b539ea53626571809bf0a68dfa0f78ec99fba.zip
+        S3Key: a1e2566f1008f0c417be9e9285edf8d56f537062155181eb018bfdf59cb45d6c.zip
       Environment:
         Variables:
           POSTS_TABLE_NAME:
@@ -342,7 +346,7 @@ Resources:
       - PostsLambdaFunctionServiceRoleF63DB2E7
     Metadata:
       aws:cdk:path: AwsCdkBlogServerlessStack/PostsLambdaFunction/Resource
-      aws:asset:path: asset.c1242abc0dc3a77ec7e2c522f71b539ea53626571809bf0a68dfa0f78ec99fba
+      aws:asset:path: asset.a1e2566f1008f0c417be9e9285edf8d56f537062155181eb018bfdf59cb45d6c
       aws:asset:is-bundled: true
       aws:asset:property: Code
   PostsLambdaFunctionPostsLambdaInvokeACE6819F:
