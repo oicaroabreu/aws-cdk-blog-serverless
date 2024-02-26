@@ -101,42 +101,43 @@ def handler(event, context):
                     "body": json.dumps(response["Items"]),
                 }
 
-        # def get_posts_by_theme(theme_id):
-        # dynamodb = boto3.resource("dynamodb")
-        # table = dynamodb.Table("posts_table")
-
-        # response = table.scan(
-        #     FilterExpression=Attr("theme_id").eq(theme_id)
-        # )
-
-        # if "Items" in response:
-        #     return response["Items"]
-        # else:
-        #     return []
-
     elif http_method == "PUT":
-        if body:
-            response = table.update_item(
-                Key={"id": post_id},
-                UpdateExpression="set title = :t, #text = :tx, user_id = :uid, theme_id = :tid",
-                ExpressionAttributeNames={"#text": "text"},
-                ExpressionAttributeValues={
-                    ":t": body["title"],
-                    ":tx": body["text"],
-                    ":uid": body["user_id"],
-                    ":tid": body["theme_id"],
-                },
-                ReturnValues="ALL_NEW",
-            )
+        if body and post_id:
+            check_table = table.get_item(Key={"id": post_id})
+            print(check_table)
+            if "Item" in check_table:
+                response = table.update_item(
+                    Key={"id": post_id},
+                    UpdateExpression="set title = :t, #text = :tx, user_id = :uid, theme_id = :tid",
+                    ExpressionAttributeNames={"#text": "text"},
+                    ExpressionAttributeValues={
+                        ":t": body["title"],
+                        ":tx": body["text"],
+                        ":uid": body["user_id"],
+                        ":tid": body["theme_id"],
+                    },
+                    ReturnValues="ALL_NEW",
+                )
+                print(response)
 
-            if "Attributes" in response:
+                if "Attributes" in response:
+                    return {
+                        "statusCode": 200,
+                        "headers": headers,
+                        "body": json.dumps(
+                            {
+                                "message": "Post Saved Successfully",
+                                "item": response["Attributes"],
+                            }
+                        ),
+                    }
+            else:
                 return {
-                    "statusCode": 200,
+                    "statusCode": 404,
                     "headers": headers,
                     "body": json.dumps(
                         {
-                            "message": "Post Saved Successfully",
-                            "item": response["Attributes"],
+                            "message": "No item found",
                         }
                     ),
                 }

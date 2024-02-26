@@ -94,26 +94,46 @@ def handler(event, context):
     elif http_method == "PUT":
 
         if body:
-            response = table.update_item(
-                Key={"id": theme_id},
-                UpdateExpression="set description = :d",
-                ExpressionAttributeValues={
-                    ":d": body["description"],
-                },
-                ReturnValues="ALL_NEW",
-            )
-            print(response)
+            
+            try:
+                response = table.get_item(Key={"id": theme_id})
+                if "Item" in response:
+                    response = table.update_item(
+                        Key={"id": theme_id},
+                        UpdateExpression="set description = :d",
+                        ExpressionAttributeValues={
+                            ":d": body["description"],
+                        },
+                        ReturnValues="ALL_NEW",
+                    )
+                    print(response)
 
-            if "Attributes" in response:
-                return {
-                    "statusCode": 200,
-                    "headers": headers,
-                    "body": json.dumps(
-                        {
-                            "message": f"Theme {theme_id} Saved Successfully",
-                            "item": response["Attributes"],
+                    if "Attributes" in response:
+                        return {
+                            "statusCode": 200,
+                            "headers": headers,
+                            "body": json.dumps(
+                                {
+                                    "message": f"Theme {theme_id} Saved Successfully",
+                                    "item": response["Attributes"],
+                                }
+                            ),
                         }
-                    ),
+                else:
+                    return {
+                        "statusCode": 404,
+                        "headers": headers,
+                        "body": json.dumps(
+                            {
+                                "message": "No item found",
+                            }
+                        ),
+                    }
+            except Exception as e:
+                return {
+                    "statusCode":  500,
+                    "headers": headers,
+                    "body": json.dumps({"message": "Internal Server Error"}),
                 }
 
         else:
