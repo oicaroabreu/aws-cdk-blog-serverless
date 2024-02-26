@@ -98,6 +98,23 @@ class AwsCdkBlogServerlessStack(Stack):
             )
         )
 
+        email_filter_lambda = lambda_python.PythonFunction(
+            self, "EmailFilterFunction",
+            entry="lambda/user",
+            index="email_filter_lambda.py",
+            handler="handler",
+            runtime=aws_lambda.Runtime.PYTHON_3_8,
+        )
+
+        email_filter_lambda.add_to_role_policy(
+            aws_iam.PolicyStatement(
+                actions=["cognito-idp:ListUsers"],
+                resources=[user_pool.user_pool_arn]
+            )
+        )
+
+        user_pool.add_trigger(aws_cognito.UserPoolOperation.PRE_SIGN_UP, email_filter_lambda)
+
         themes_lambda_function = lambda_python.PythonFunction(
             self,
             "ThemesLambdaFunction",

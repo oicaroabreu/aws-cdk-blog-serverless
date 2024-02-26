@@ -2,6 +2,7 @@ import json
 import os
 import boto3
 import datetime
+from botocore.exceptions import ClientError
 from ulid import ulid
 
 
@@ -14,22 +15,37 @@ class CustomJSONEncoder(json.JSONEncoder):
 
 def create_user(user_pool_id, username, fullname, email, password, profile_picture):
     client = boto3.client("cognito-idp")
-    response = client.admin_create_user(
-        UserPoolId=user_pool_id,
-        Username=username,
-        TemporaryPassword=password,
-        UserAttributes=[
+    try:
+
+        attributes = [
             {"Name": "name", "Value": fullname},
             {"Name": "email", "Value": email},
-            {"Name": "custom:profile_picture", "Value": profile_picture},
-        ],
-    )
-    return response
+        ]
+        if profile_picture:
+            attributes.append(
+                {"Name": "custom:profile_picture", "Value": profile_picture}
+            )
+
+        response = client.admin_create_user(
+            UserPoolId=user_pool_id,
+            Username=username,
+            TemporaryPassword=password,
+            UserAttributes=attributes,
+        )
+        return 200, "User saved succesfully"
+    except ClientError as e:
+        print(f"Error creating user: {e.response}")
+        return 400, e.response["message"]
 
 
 def get_user(user_pool_id, username):
     client = boto3.client("cognito-idp")
-    response = client.admin_get_user(UserPoolId=user_pool_id, Username=username)
+    try:
+        response = client.admin_get_user(UserPoolId=user_pool_id, Username=username)
+        return 200, response
+    except ClientError as e:
+        print(f"Error creating user: {e.response}")
+        return 400, e.response["message"]
 
     return response
 
@@ -56,30 +72,43 @@ def transform_single_user(user_data, attr_field):
         elif attribute["Name"] == "email":
             transformed_user["email"] = attribute["Value"]
         elif attribute["Name"].startswith("custom:"):
-            transformed_user[attribute["Name"].replace("custom:profile_picture", "photo")] = attribute[
-                "Value"
-            ]
+            transformed_user[
+                attribute["Name"].replace("custom:profile_picture", "photo")
+            ] = attribute["Value"]
     return transformed_user
 
 
 def delete_user(user_pool_id, username):
     client = boto3.client("cognito-idp")
-    response = client.admin_delete_user(UserPoolId=user_pool_id, Username=username)
-    return response
+    try:
+        response = client.admin_delete_user(UserPoolId=user_pool_id, Username=username)
+        return 200, f"User {username} has been deleted succesfully"
+    except ClientError as e:
+        print(f"Error creating user: {e.response}")
+        return 400, e.response["message"]
 
 
 def update_user_attributes(user_pool_id, username, fullname, email, profile_picture):
     client = boto3.client("cognito-idp")
-    response = client.admin_update_user_attributes(
-        UserPoolId=user_pool_id,
-        Username=username,
-        UserAttributes=[
+    try:
+
+        attributes = [
             {"Name": "name", "Value": fullname},
             {"Name": "email", "Value": email},
-            {"Name": "custom:profile_picture", "Value": profile_picture},
-        ],
-    )
-    return response
+        ]
+        if profile_picture:
+            attributes.append({"Name": "custom:profile_picture", "Value": profile_picture})
+
+        response = client.admin_update_user_attributes(
+            UserPoolId=user_pool_id,
+            Username=username,
+            UserAttributes=attributes,
+        )
+        print(response)
+        return 200, f"User {username} updated succesfully"
+    except ClientError as e:
+        print(f"Error creating user: {e.response}")
+        return 400, e.response["message"]
 
 
 def handler(event, context):
@@ -110,22 +139,22 @@ def handler(event, context):
 
     if http_method == "POST":
         if body:
-            response = create_user(
+            code, response = create_user(
                 user_pool_id,
                 username=ulid(),
                 fullname=body["name"],
                 email=body["email"],
                 password=default_password,
-                profile_picture=body["photo"],
+                profile_picture=body.get("photo", None),
             )
             print(response)
 
             return {
-                "statusCode": 200,
+                "statusCode": code,
                 "headers": headers,
                 "body": json.dumps(
                     {
-                        "message": "User Saved Successfully",
+                        "message": response,
                     }
                 ),
             }
@@ -141,14 +170,24 @@ def handler(event, context):
             }
     elif http_method == "GET":
         if user_id:
-            response = get_user(user_pool_id, user_id)
+            code, response = get_user(user_pool_id, user_id)
             print(response)
-            # if "Item" in response:
+            if "UserAttributes" in response:
+                return {
+                    "statusCode": 200,
+                    "headers": headers,
+                    "body": json.dumps(
+                        transform_single_user(response, "UserAttributes"),
+                        cls=CustomJSONEncoder,
+                    ),
+                }
             return {
-                "statusCode": 200,
+                "statusCode": code,
                 "headers": headers,
                 "body": json.dumps(
-                    transform_single_user(response, "UserAttributes"), cls=CustomJSONEncoder
+                    {
+                        "message": response,
+                    }
                 ),
             }
         else:
@@ -167,21 +206,21 @@ def handler(event, context):
 
         if body:
 
-            response = update_user_attributes(
+            code, response = update_user_attributes(
                 user_pool_id,
                 username=user_id,
                 fullname=body["name"],
                 email=body["email"],
-                profile_picture=body["photo"],
+                profile_picture=body.get("photo", None),
             )
-            print(response)
 
-            # if "Attributes" in response:
             return {
-                "statusCode": 200,
+                "statusCode": code,
                 "headers": headers,
                 "body": json.dumps(
-                    {"message": f"User {user_id} has been updated succesfully"}
+                    {
+                        "message": response,
+                    }
                 ),
             }
         else:
@@ -196,16 +235,14 @@ def handler(event, context):
             }
 
     elif http_method == "DELETE":
-        response = delete_user(user_pool_id, user_id)
+        code, response = delete_user(user_pool_id, user_id)
         print(response)
 
-        # if "ResponseMetadata" in response:
-        #     if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
         return {
-            "statusCode": 200,
+            "statusCode": code,
             "headers": headers,
             "body": json.dumps(
-                {"message": f"User {user_id} has been deleted succesfully"}
+                {"message": response}
             ),
         }
 

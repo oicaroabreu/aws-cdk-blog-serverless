@@ -1,8 +1,19 @@
+import datetime
 import json
+import time
 import os
 import boto3
 from ulid import ulid
 from botocore.exceptions import ClientError
+
+
+def get_current_datetime():
+
+    utc_now = datetime.datetime.utcnow()
+    brt_offset = datetime.timedelta(hours=-3)
+    saopaulo_time = utc_now + brt_offset
+
+    return saopaulo_time.strftime("%Y-%m-%dT%H:%M:%SZ%z")
 
 
 def handler(event, context):
@@ -37,7 +48,7 @@ def handler(event, context):
                     "id": ulid(),
                     "title": body["title"],
                     "text": body["text"],
-                    "datetime": body["datetime"],
+                    "datetime": get_current_datetime(),
                     "user_id": body["user_id"],
                     "theme_id": body["theme_id"],
                 }
@@ -71,6 +82,16 @@ def handler(event, context):
                     "headers": headers,
                     "body": json.dumps(response["Item"]),
                 }
+            else:
+                return {
+                    "statusCode": 404,
+                    "headers": headers,
+                    "body": json.dumps(
+                        {
+                            "message": "No item found",
+                        }
+                    ),
+                }
         else:
             response = table.scan()
             if "Items" in response:
@@ -97,12 +118,11 @@ def handler(event, context):
         if body:
             response = table.update_item(
                 Key={"id": post_id},
-                UpdateExpression="set title = :t, #text = :tx, #dt = :dt, user_id = :uid, theme_id = :tid",
-                ExpressionAttributeNames={"#dt": "datetime", "#text": "text"},
+                UpdateExpression="set title = :t, #text = :tx, user_id = :uid, theme_id = :tid",
+                ExpressionAttributeNames={"#text": "text"},
                 ExpressionAttributeValues={
                     ":t": body["title"],
                     ":tx": body["text"],
-                    ":dt": body["datetime"],
                     ":uid": body["user_id"],
                     ":tid": body["theme_id"],
                 },
@@ -132,19 +152,33 @@ def handler(event, context):
             }
 
     elif http_method == "DELETE":
-        response = table.delete_item(Key={"id": post_id})
-
-        if "ResponseMetadata" in response:
-            if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
+        try:
+            response = table.get_item(Key={"id": post_id})
+            if "Item" in response:
+                response = table.delete_item(Key={"id": post_id})
+                print(response)
+                if "ResponseMetadata" in response and response["ResponseMetadata"]["HTTPStatusCode"] ==  200:
+                    return {
+                        "statusCode":  200,
+                        "headers": headers,
+                        "body": json.dumps({"message": f"Post {post_id} Deleted Successfully"}),
+                    }
+            else:
                 return {
-                    "statusCode": 200,
+                    "statusCode": 404,
                     "headers": headers,
                     "body": json.dumps(
                         {
-                            "message": "Success",
+                            "message": "No item found",
                         }
                     ),
                 }
+        except Exception as e:
+            return {
+                "statusCode":  500,
+                "headers": headers,
+                "body": json.dumps({"message": "Internal Server Error"}),
+            }
 
     return {
         "statusCode": 200,

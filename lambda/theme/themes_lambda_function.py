@@ -71,6 +71,17 @@ def handler(event, context):
                     "headers": headers,
                     "body": json.dumps(response["Item"]),
                 }
+            else:
+                return {
+                    "statusCode": 404,
+                    "headers": headers,
+                    "body": json.dumps(
+                        {
+                            "message": "No item found",
+                        }
+                    ),
+                }
+
         else:
             response = table.scan()
             if "Items" in response:
@@ -99,7 +110,7 @@ def handler(event, context):
                     "headers": headers,
                     "body": json.dumps(
                         {
-                            "message": "Theme Saved Successfully",
+                            "message": f"Theme {theme_id} Saved Successfully",
                             "item": response["Attributes"],
                         }
                     ),
@@ -117,15 +128,34 @@ def handler(event, context):
             }
 
     elif http_method == "DELETE":
-        response = table.delete_item(Key={"id": theme_id})
-
-        if "ResponseMetadata" in response:
-            if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
+        try:
+            response = table.get_item(Key={"id": theme_id})
+            if "Item" in response:
+                response = table.delete_item(Key={"id": theme_id})
+                print(response)
+                if "ResponseMetadata" in response and response["ResponseMetadata"]["HTTPStatusCode"] ==  200:
+                    return {
+                        "statusCode":  200,
+                        "headers": headers,
+                        "body": json.dumps({"message": f"Theme {theme_id} Deleted Successfully"}),
+                    }
+            else:
                 return {
-                    "statusCode": 200,
+                    "statusCode": 404,
                     "headers": headers,
-                    "body": json.dumps({"message": "Success"}),
+                    "body": json.dumps(
+                        {
+                            "message": "No item found",
+                        }
+                    ),
                 }
+        except Exception as e:
+            return {
+                "statusCode":  500,
+                "headers": headers,
+                "body": json.dumps({"message": "Internal Server Error"}),
+            }
+
 
     return {
         "statusCode": 200,

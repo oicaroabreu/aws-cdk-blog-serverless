@@ -1,723 +1,1170 @@
----
-swagger: "2.0"
+
+swagger: 2.0
 info:
-  version: "2024-02-24T19:52:12Z"
-  title: "blog-api"
-  description: |
-    The Smartylighting Streetlights API allows you to remotely manage the city lights.
-
-    ### Check out its awesome features:
-
-    * Turn a specific streetlight on/off 🌃
-    * Dim a specific streetlight 😎
-    * Receive real-time information about environmental lighting conditions 📈
+  version: v0.1
+  title: blog-api
+  description: API de Blog utilizando a arquitetura  Serverless da AWS\n\nConfira o código-fonte: [Github Repo](https://github.com/oicaroabreu/aws-cdk-blog-serverless)\n\n[Contact Ícaro Abreu](mailto:icaro.labreu@gmail.com)\n
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
-host: "mjoncyartl.execute-api.us-west-2.amazonaws.com"
-basePath: "/prod"
+host: mjoncyartl.execute-api.us-west-2.amazonaws.com
+basePath: /prod
 schemes:
-- "https"
+  - https
 tags:
-  - name: "Posts"
-    description: "Operations related to blog posts"
-  - name: "Themes"
-    description: "Operations related to blog themes"
-  - name: "Users"
-    description: "Operations related to user management"
-
+  -
+    name: Posts
+    description: Operations related to blog posts
+  -
+    name: Themes
+    description: Operations related to blog themes
+  -
+    name: Users
+    description: Operations related to user management
 definitions:
   Post:
-    type: "object"
+    type: object
     properties:
       id:
         title: ID
         readOnly: true
-        type: "string"
+        type: string
       title:
-        title: "Post Title"
-        type: "string"
+        title: Post Title
+        type: string
+        minLength: 5
       text:
-        title: "Post Content"
-        type: "string"
+        title: Post Content
+        type: string
+        minLength: 10
       datetime:
-        title: "Post DateTime"
-        type: "string"
+        title: Post DateTime
+        type: string
       user_id:
-        title: "User ID"
-        type: "string"
+        title: User ID
+        type: string
       theme_id:
-        title: "Theme ID"
-        type: "string"
+        title: Theme ID
+        type: string
     required:
-    - datetime
-    - user_id
-    - text
-    - theme_id
-    - title
+      - datetime
+      - user_id
+      - text
+      - theme_id
+      - title
   Theme:
-    type: "object"
+    type: object
     properties:
       id:
         title: ID
         readOnly: true
-        type: "string"
+        type: string
       description:
-        title: "Theme Description"
-        type: "string"
+        title: Theme Description
+        type: string
+        minLength: 3
     required:
-    - description
+      - description
   User:
-    type: "object"
+    type: object
     properties:
       id:
         title: ID
         readOnly: true
-        type: "string"
+        type: string
       name:
-        title: "User Full Name"
-        type: "string"
+        title: User Full Name
+        type: string
+        minLength: 3
       email:
-        title: "User Email"
-        type: "string"
+        title: User Email
+        type: string
       photo:
-        title: "User Photo URL"
-        type: "string"
+        title: User Photo URL
+        type: string
     required:
-    - name
-    - email
-    - photo
-
-
-
+      - name
+      - email
 paths:
   /posts:
     get:
       tags:
-        - "Posts"
+        - Posts
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  title: ID
+                  type: string
+                  readOnly: true
+                title:
+                  title: Post Title
+                  type: string
+                text:
+                  title: Post Content
+                  type: string
+                datetime:
+                  title: Post DateTime
+                  type: string
+                user_id:
+                  title: User ID
+                  type: string
+                theme_id:
+                  title: Theme ID
+                  type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "GET"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: GET
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
     post:
       tags:
-        - "Posts"
+        - Posts
       parameters:
-        - name: "body"
-          in: "body"
-          description: "Post object that needs to be added"
+        -
+          name: body
+          in: body
+          description: Post object that needs to be added
           required: true
           schema:
-            $ref: "#/definitions/Post"
+            type: object
+            properties:
+              id:
+                title: ID
+                readOnly: true
+                type: string
+              title:
+                title: Post Title
+                type: string
+                minLength: 5
+              text:
+                title: Post Content
+                type: string
+                minLength: 10
+              user_id:
+                title: User ID
+                type: string
+              theme_id:
+                title: Theme ID
+                type: string
+            required:
+              - user_id
+              - text
+              - theme_id
+              - title
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
   /posts/{id}:
     get:
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
+        -
+          name: id
+          in: path
+          required: true
+          type: string
       tags:
-        - "Posts"
+        - Posts
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              id:
+                title: ID
+                type: string
+                readOnly: true
+              title:
+                title: Post Title
+                type: string
+              text:
+                title: Post Content
+                type: string
+              datetime:
+                title: Post DateTime
+                type: string
+              user_id:
+                title: User ID
+                type: string
+              theme_id:
+                title: Theme ID
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
     put:
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
-      - name: "body"
-        in: "body"
-        description: "Post object that needs to be updated"
-        required: true
-        schema:
-          $ref: "#/definitions/Post"
+        -
+          name: id
+          in: path
+          required: true
+          type: string
+        -
+          name: body
+          in: body
+          description: Post object that needs to be updated
+          required: true
+          schema:
+            type: object
+            properties:
+              id:
+                title: ID
+                readOnly: true
+                type: string
+              title:
+                title: Post Title
+                type: string
+                minLength: 5
+              text:
+                title: Post Content
+                type: string
+                minLength: 10
+              user_id:
+                title: User ID
+                type: string
+              theme_id:
+                title: Theme ID
+                type: string
+            required:
+              - datetime
+              - user_id
+              - text
+              - theme_id
+              - title
       tags:
-        - "Posts"
+        - Posts
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
     delete:
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
+        -
+          name: id
+          in: path
+          required: true
+          type: string
       tags:
-        - "Posts"
+        - Posts
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-PostsLambdaFunction9A19C-Pr1bB59juwFO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
   /themes:
     get:
       tags:
-        - "Themes"
+        - Themes
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  title: ID
+                  type: string
+                  readOnly: true
+                description:
+                  title: Post Title
+                  type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
     post:
       tags:
-        - "Themes"
+        - Themes
       parameters:
-        - name: "body"
-          in: "body"
-          description: "Theme object that needs to be added"
+        -
+          name: body
+          in: body
+          description: Theme object that needs to be added
           required: true
           schema:
-            $ref: "#/definitions/Theme"
+            type: object
+            properties:
+              description:
+                title: Theme Description
+                type: string
+                minLength: 3
+            required:
+              - description
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
   /themes/{id}:
     get:
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
+        -
+          name: id
+          in: path
+          required: true
+          type: string
       tags:
-        - "Themes"
+        - Themes
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              id:
+                title: ID
+                readOnly: true
+                type: string
+              description:
+                title: Theme Description
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
     put:
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
-      - name: "body"
-        in: "body"
-        description: "Theme object that needs to be updated"
-        required: true
-        schema:
-          $ref: "#/definitions/Theme"
+        -
+          name: id
+          in: path
+          required: true
+          type: string
+        -
+          name: body
+          in: body
+          description: Theme object that needs to be updated
+          required: true
+          schema:
+            type: object
+            properties:
+              description:
+                title: Theme Description
+                type: string
+                minLength: 3
+            required:
+              - description
       tags:
-        - "Themes"
+        - Themes
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
     delete:
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
+        -
+          name: id
+          in: path
+          required: true
+          type: string
       tags:
-        - "Themes"
+        - Themes
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-ThemesLambdaFunction9B88-YSQ7Giszsmhp/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
   /users:
     get:
       tags:
-        - "Users"
+        - Users
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  title: ID
+                  readOnly: true
+                  type: string
+                name:
+                  title: User Full Name
+                  type: string
+                  minLength: 3
+                email:
+                  title: User Email
+                  type: string
+                photo:
+                  title: User Photo URL
+                  type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
     post:
       tags:
-        - "Users"
+        - Users
       parameters:
-        - name: "body"
-          in: "body"
-          description: "User object that needs to be added"
+        -
+          name: body
+          in: body
+          description: User object that needs to be added
           required: true
           schema:
-            $ref: "#/definitions/User"
+            type: object
+            properties:
+              id:
+                title: ID
+                readOnly: true
+                type: string
+              name:
+                title: User Full Name
+                type: string
+              email:
+                title: User Email
+                type: string
+              photo:
+                title: User Photo URL
+                type: string
+            required:
+              - name
+              - email
+              - photo
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
   /users/{id}:
     get:
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
+        -
+          name: id
+          in: path
+          required: true
+          type: string
       tags:
-        - "Users"
+        - Users
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              id:
+                title: ID
+                readOnly: true
+                type: string
+              name:
+                title: User Full Name
+                type: string
+                minLength: 3
+              email:
+                title: User Email
+                type: string
+              photo:
+                title: User Photo URL
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
     put:
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
-      - name: "body"
-        in: "body"
-        description: "User object that needs to be updated"
-        required: true
-        schema:
-          $ref: "#/definitions/User"
+        -
+          name: id
+          in: path
+          required: true
+          type: string
+        -
+          name: body
+          in: body
+          description: User object that needs to be updated
+          required: true
+          schema:
+            type: object
+            properties:
+              id:
+                title: ID
+                readOnly: true
+                type: string
+              name:
+                title: User Full Name
+                type: string
+              email:
+                title: User Email
+                type: string
+              photo:
+                title: User Photo URL
+                type: string
+            required:
+              - name
+              - email
+              - photo
       tags:
-        - "Users"
+        - Users
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
     delete:
       parameters:
-      - name: "id"
-        in: "path"
-        required: true
-        type: "string"
+        -
+          name: id
+          in: path
+          required: true
+          type: string
       tags:
-        - "Users"
+        - Users
       responses:
-        '200':
+        200:
           description: Successful operation
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '400':
+              type: string
+        400:
           description: Bad request
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
-        '500':
+              type: string
+        500:
           description: Internal server error
+          schema:
+            type: object
+            properties:
+              message:
+                title: message
+                type: string
           headers:
             Access-Control-Allow-Origin:
-              type: "string"
+              type: string
             Access-Control-Allow-Methods:
-              type: "string"
+              type: string
             Access-Control-Allow-Headers:
-              type: "string"
+              type: string
       x-amazon-apigateway-integration:
-        httpMethod: "POST"
-        uri: "arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations"
-        passthroughBehavior: "when_no_match"
-        type: "aws_proxy"
+        httpMethod: POST
+        uri: arn:aws:apigateway:us-west-2:lambda:path/2015-03-31/functions/arn:aws:lambda:us-west-2:668232768380:function:AwsCdkBlogServerlessStack-UserManagerFunctionE9D62-crMtPfoGwlMO/invocations
+        passthroughBehavior: when_no_match
+        type: aws_proxy
